@@ -1,4 +1,7 @@
 #include "main_menu.h"
+#include "serial_input.h"
+
+#include <string.h>
 
 #define MAIN_MENU_W      480
 #define MAIN_MENU_HEIGHT 320
@@ -14,7 +17,6 @@
 #define MAIN_MENU_BACKSTORY_IMG "assets/main_menu/backstory ID.png"
 #define MAIN_MENU_BACKSTORY_HOVER "assets/main_menu/Backstory_hoverd.png"
 #define MAIN_MENU_EXIT_IMG "assets/main_menu/exit ID.png"
-#define MAIN_MENU_HOVER_SOUND "assets/main_menu/Hover.mp3"
 #define MAIN_MENU_DEBUG 0
 
 typedef struct
@@ -39,7 +41,6 @@ typedef struct
     MainMenuImage background;
     MainMenuImage logo;
     MainMenuButton buttons[MAIN_MENU_BUTTONS];
-    Mix_Chunk *hoverSound;
 } MainMenu;
 
 static SDL_Rect main_menu_visible_bounds(SDL_Surface *surface)
@@ -289,8 +290,6 @@ static void main_menu_init(MainMenu *menu, SDL_Renderer *renderer)
     main_menu_init_button(&menu->buttons[3], renderer, MAIN_MENU_BACKSTORY_IMG, MAIN_MENU_BACKSTORY_HOVER);
     main_menu_init_button(&menu->buttons[4], renderer, MAIN_MENU_EXIT_IMG, MAIN_MENU_EXIT_IMG);
     main_menu_layout(menu, MAIN_MENU_W, MAIN_MENU_HEIGHT);
-    menu->hoverSound = Mix_LoadWAV(MAIN_MENU_HOVER_SOUND);
-    stellarMusicStartMenu();
 }
 
 static void main_menu_destroy(MainMenu *menu)
@@ -304,15 +303,12 @@ static void main_menu_destroy(MainMenu *menu)
         main_menu_destroy_image(&menu->buttons[i].normal);
         main_menu_destroy_image(&menu->buttons[i].hover);
     }
-    if (menu->hoverSound != NULL)
-        Mix_FreeChunk(menu->hoverSound);
 }
 
 static void main_menu_update_hover(MainMenu *menu)
 {
     int x;
     int y;
-    int prev;
     int i;
 
     SDL_GetMouseState(&x, &y);
@@ -320,10 +316,7 @@ static void main_menu_update_hover(MainMenu *menu)
     y = y * MAIN_MENU_HEIGHT / SCREEN_H;
     for (i = 0; i < MAIN_MENU_BUTTONS; i++)
     {
-        prev = menu->buttons[i].hovered;
         menu->buttons[i].hovered = main_menu_inside(x, y, menu->buttons[i].visibleRect);
-        if (menu->buttons[i].hovered && !prev && menu->hoverSound != NULL)
-            Mix_PlayChannel(-1, menu->hoverSound, 0);
     }
 }
 
@@ -405,20 +398,45 @@ int run_main_menu(SDL_Renderer *renderer)
     SDL_Event event;
     int running = 1;
     int result = MAIN_MENU_QUIT;
+    int selected = 0;
     int i;
 
     main_menu_init(&menu, renderer);
     while (running)
     {
-        stellarMusicUpdateMenu();
+        serial_input_poll();
         main_menu_update_hover(&menu);
+        for (i = 0; i < MAIN_MENU_BUTTONS; i++)
+            if (menu.buttons[i].hovered)
+                selected = i;
+        for (i = 0; i < MAIN_MENU_BUTTONS; i++)
+            menu.buttons[i].hovered = (i == selected);
         main_menu_render(&menu, renderer);
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_QUIT)
                 running = 0;
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-                running = 0;
+            if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_ESCAPE)
+                    running = 0;
+                if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
+                    selected = (selected + MAIN_MENU_BUTTONS - 1) % MAIN_MENU_BUTTONS;
+                if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
+                    selected = (selected + 1) % MAIN_MENU_BUTTONS;
+                if (event.key.keysym.sym == SDLK_SPACE ||
+                    event.key.keysym.sym == SDLK_RETURN ||
+                    event.key.keysym.sym == SDLK_KP_ENTER)
+                {
+                    if (selected == 0)
+                    {
+                        result = MAIN_MENU_START;
+                        running = 0;
+                    }
+                    if (selected == 4)
+                        running = 0;
+                }
+            }
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
                 for (i = 0; i < MAIN_MENU_BUTTONS; i++)
                     menu.buttons[i].down = menu.buttons[i].hovered;
@@ -472,29 +490,22 @@ static void draw_mode_text(SDL_Renderer *renderer, TTF_Font *font,
 int prompt_game_mode(SDL_Renderer *renderer, TTF_Font *font)
 {
     MainMenuImage background = main_menu_image(renderer, MAIN_MENU_BG);
-    Mix_Chunk *hover = Mix_LoadWAV(MAIN_MENU_HOVER_SOUND);
     SDL_Event event;
     /* 480×320: two side-by-side buttons, centred vertically */
     SDL_Rect single = {SCREEN_W / 2 - 175, SCREEN_H / 2 - 22, 150, 44};
     SDL_Rect multi  = {SCREEN_W / 2 +  25, SCREEN_H / 2 - 22, 150, 44};
     int singleHover = 0;
     int multiHover = 0;
-    int oldSingle;
-    int oldMulti;
     int x;
     int y;
     int result = 0;
 
     while (result == 0)
     {
-        stellarMusicUpdateMenu();
+        serial_input_poll();
         SDL_GetMouseState(&x, &y);
-        oldSingle = singleHover;
-        oldMulti = multiHover;
         singleHover = main_menu_inside(x, y, single);
         multiHover = main_menu_inside(x, y, multi);
-        if (hover != NULL && ((singleHover && !oldSingle) || (multiHover && !oldMulti)))
-            Mix_PlayChannel(-1, hover, 0);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -540,7 +551,5 @@ int prompt_game_mode(SDL_Renderer *renderer, TTF_Font *font)
     }
 
     main_menu_destroy_image(&background);
-    if (hover != NULL)
-        Mix_FreeChunk(hover);
     return result;
 }

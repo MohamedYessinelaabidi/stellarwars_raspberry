@@ -15,7 +15,7 @@ static int  s_fd = -1;   /* file descriptor, -1 = not open */
 
 /* Each tracked key: SDL scancode, SDL keycode, last-seen timestamp.
  * We auto-release a key 80 ms after the last byte that activated it. */
-#define SERIAL_KEY_COUNT 6
+#define SERIAL_KEY_COUNT 9
 #define SERIAL_KEY_RELEASE_MS 80u
 
 typedef struct {
@@ -32,8 +32,11 @@ static SerialKey s_keys[SERIAL_KEY_COUNT] = {
     { 'S', 's', SDLK_DOWN,   SDL_SCANCODE_DOWN,   0, 0 },
     { 'A', 'a', SDLK_LEFT,   SDL_SCANCODE_LEFT,   0, 0 },
     { 'D', 'd', SDLK_RIGHT,  SDL_SCANCODE_RIGHT,  0, 0 },
+    { 'C', 'c', SDLK_SPACE,  SDL_SCANCODE_SPACE,  0, 0 },
     { ' ', ' ', SDLK_SPACE,  SDL_SCANCODE_SPACE,  0, 0 },
     { 'Q', 'q', SDLK_ESCAPE, SDL_SCANCODE_ESCAPE, 0, 0 },
+    { 'P', 'p', SDLK_a,      SDL_SCANCODE_A,      0, 0 },
+    { 'N', 'n', SDLK_d,      SDL_SCANCODE_D,      0, 0 },
 };
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */

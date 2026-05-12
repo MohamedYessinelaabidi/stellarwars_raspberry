@@ -1,7 +1,9 @@
 #ifndef MAIN_MENU_H
 #define MAIN_MENU_H
 
-#include "header.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 #define MAIN_MENU_QUIT 0
 #define MAIN_MENU_START 1

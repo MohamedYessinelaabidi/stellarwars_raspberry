@@ -265,7 +265,7 @@ static int build_round(GameContext *ctx)
 
 int game_init(GameContext *ctx)
 {
-    Uint32 window_flags = SDL_WINDOW_SHOWN;
+    Uint32 window_flags = SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP;
 
     memset(ctx, 0, sizeof(*ctx));
     srand((unsigned)time(NULL));
@@ -275,8 +275,8 @@ int game_init(GameContext *ctx)
         return 0;
     }
 
-    if (getenv("STELLAR_FULLSCREEN") != NULL)
-        window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    if (getenv("STELLAR_WINDOWED") != NULL)
+        window_flags &= ~SDL_WINDOW_FULLSCREEN_DESKTOP;
 
     ctx->window = SDL_CreateWindow(WINDOW_TITLE,
                     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "main_menu.h"
 #include "puzzle_game/game.h"
 #include "serial_input.h"
 
@@ -24,6 +25,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "game_init failed – aborting.\n");
         game_destroy(&ctx);
         return 1;
+    }
+
+    if (run_main_menu(ctx.renderer) != MAIN_MENU_START) {
+        game_destroy(&ctx);
+        serial_input_close();
+        return 0;
     }
 
     

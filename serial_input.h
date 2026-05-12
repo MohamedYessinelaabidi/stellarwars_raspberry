@@ -11,8 +11,11 @@
  *   'S' / 's'  →  SDLK_DOWN  (crouch / navigate down)
  *   'A' / 'a'  →  SDLK_LEFT  (move left)
  *   'D' / 'd'  →  SDLK_RIGHT (move right)
- *   ' '        →  SDLK_SPACE (shoot / confirm)
+ *   'C' / 'c'  →  SDLK_SPACE (shoot / confirm)
+ *   ' '        →  SDLK_SPACE (legacy confirm)
  *   'Q' / 'q'  →  SDLK_ESCAPE (pause / back)
+ *   'P' / 'p'  →  SDLK_a     (previous puzzle piece)
+ *   'N' / 'n'  →  SDLK_d     (next puzzle piece)
  *
  * The Arduino should send the char while the button is held, then send
  * a release sentinel (uppercase = pressed, lowercase = released), OR

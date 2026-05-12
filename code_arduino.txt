@@ -1,0 +1,82 @@
+// ======================================
+// Arduino Nano SDL Gamepad Serial Sender
+// ======================================
+
+// Joystick pins
+const int joyX = A1;
+const int joyY = A3;
+const int joySW = A5;
+
+// Buttons
+const int button1 = 2;
+const int button2 = 3;
+const int button3 = 5;
+const int button4 = 7;
+
+// Thresholds
+const int lowThreshold = 350;
+const int highThreshold = 650;
+
+bool leftHeld = false;
+bool rightHeld = false;
+bool upHeld = false;
+bool downHeld = false;
+
+bool lastB1 = HIGH;
+bool lastB2 = HIGH;
+bool lastB3 = HIGH;
+bool lastB4 = HIGH;
+bool lastJOY = HIGH;
+
+void sendKey(bool wantHeld, bool &held, char pressChar, char releaseChar) {
+  if (wantHeld && !held) {
+    Serial.print(pressChar);
+    held = true;
+  } else if (!wantHeld && held) {
+    Serial.print(releaseChar);
+    held = false;
+  }
+}
+
+void sendButton(bool currentState, bool &lastState, char pressChar, char releaseChar) {
+  if (currentState == LOW && lastState == HIGH) {
+    Serial.print(pressChar);
+  } else if (currentState == HIGH && lastState == LOW) {
+    Serial.print(releaseChar);
+  }
+
+  lastState = currentState;
+}
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(button1, INPUT_PULLUP);
+  pinMode(button2, INPUT_PULLUP);
+  pinMode(button3, INPUT_PULLUP);
+  pinMode(button4, INPUT_PULLUP);
+  pinMode(joySW, INPUT_PULLUP);
+}
+
+void loop() {
+  int xValue = analogRead(joyY);
+  int yValue = analogRead(joyX);
+
+  bool wantRight = (xValue < lowThreshold);
+  bool wantLeft = (xValue > highThreshold);
+  bool wantUp = (yValue < lowThreshold);
+  bool wantDown = (yValue > highThreshold);
+
+  sendKey(wantLeft, leftHeld, 'A', 'a');
+  sendKey(wantRight, rightHeld, 'D', 'd');
+  sendKey(wantUp, upHeld, 'W', 'w');
+  sendKey(wantDown, downHeld, 'S', 's');
+
+  sendButton(digitalRead(button1), lastB1, 'C', 'c');  // confirm / place
+  sendButton(digitalRead(button2), lastB2, 'Q', 'q');  // back / quit
+  sendButton(digitalRead(button3), lastB3, 'P', 'p');  // previous puzzle piece
+  sendButton(digitalRead(button4), lastB4, 'N', 'n');  // next puzzle piece
+  sendButton(digitalRead(joySW), lastJOY, 'C', 'c');   // confirm / place
+
+  delay(20);
+}
