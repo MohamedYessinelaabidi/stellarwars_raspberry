@@ -1,4 +1,5 @@
 #include "header.h"
+#include "../serial_input.h"
 
 static CharacterDefinition characters[] = {
     {
@@ -198,6 +199,7 @@ int runCharacterSelectMenu(SDL_Renderer *renderer, TTF_Font *font, CharacterSele
 
     while (running)
     {
+        serial_input_poll();
         stellarMusicUpdateMenu();
         SDL_SetRenderDrawColor(renderer, 12, 15, 24, 255);
         SDL_RenderClear(renderer);

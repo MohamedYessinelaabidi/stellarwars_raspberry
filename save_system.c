@@ -1,4 +1,5 @@
 #include "save_system.h"
+#include "serial_input.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -785,12 +786,15 @@ int prompt_select_save(SDL_Renderer *renderer, TTF_Font *font, char *path, int p
     int mouseX;
     int mouseY;
     int i;
+    int selected;
 
     count = load_save_entries(entries, MAX_SAVE_FILES);
+    selected = (count > 0) ? 0 : -1;
     memset(&visuals, 0, sizeof(visuals));
     load_save_menu_visuals(renderer, &visuals);
     while (1)
     {
+        serial_input_poll();
         stellarMusicUpdateMenu();
         SDL_GetMouseState(&mouseX, &mouseY);
         oldHoverIndex = hoverIndex;
@@ -806,6 +810,14 @@ int prompt_select_save(SDL_Renderer *renderer, TTF_Font *font, char *path, int p
             if (point_in_rect(mouseX, mouseY, rowRect))
                 hoverIndex = i;
         }
+        if (hoverIndex >= 0)
+            selected = hoverIndex;
+        else if (newHovered)
+            selected = -1;
+        else if (selected >= 0 && selected < count)
+            hoverIndex = selected;
+        else
+            newHovered = 1;
         if (visuals.hover != NULL &&
             ((hoverIndex >= 0 && hoverIndex != oldHoverIndex) ||
              (newHovered && !oldNewHovered)))
@@ -840,6 +852,33 @@ int prompt_select_save(SDL_Renderer *renderer, TTF_Font *font, char *path, int p
 
             if (event.type == SDL_KEYDOWN)
             {
+                if (event.key.keysym.sym == SDLK_UP)
+                {
+                    if (count > 0)
+                        selected = (selected <= 0) ? -1 : selected - 1;
+                }
+
+                if (event.key.keysym.sym == SDLK_DOWN)
+                {
+                    if (count > 0)
+                        selected = (selected < 0) ? 0 : (selected + 1) % count;
+                }
+
+                if (event.key.keysym.sym == SDLK_SPACE ||
+                    event.key.keysym.sym == SDLK_RETURN ||
+                    event.key.keysym.sym == SDLK_KP_ENTER)
+                {
+                    if (selected >= 0 && selected < count)
+                    {
+                        snprintf(path, pathSize, "%s", entries[selected].path);
+                        destroy_save_menu_visuals(&visuals);
+                        return 1;
+                    }
+
+                    destroy_save_menu_visuals(&visuals);
+                    return 0;
+                }
+
                 if (event.key.keysym.sym == SDLK_n)
                 {
                     destroy_save_menu_visuals(&visuals);

@@ -1,70 +1,151 @@
-#include <stdio.h>
+#include "header.h"
 #include "main_menu.h"
-#include "puzzle_game/game.h"
+#include "save_system.h"
 #include "serial_input.h"
 
-/* Serial device the Arduino Nano is connected to on the Pi.
- * Change to /dev/ttyACM0 if the Nano uses a CDC-ACM USB chip. */
-#ifndef ARDUINO_SERIAL_DEV
 #define ARDUINO_SERIAL_DEV "/dev/ttyUSB0"
-#endif
 
-int main(int argc, char *argv[])
+static SDL_Texture *load_texture(SDL_Renderer *renderer, const char *path)
 {
-    (void)argc; (void)argv;
+    SDL_Surface *surface = IMG_Load(path);
+    SDL_Texture *texture;
 
-    /* Open Arduino serial port (non-fatal: game works with keyboard if absent) */
+    if (surface == NULL)
+        return NULL;
+
+    texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
+}
+
+static void render_text(SDL_Renderer *renderer, TTF_Font *font,
+                        const char *text, int x, int y)
+{
+    SDL_Surface *surface;
+    SDL_Texture *texture;
+    SDL_Rect dst;
+
+    if (font == NULL)
+        return;
+
+    surface = TTF_RenderText_Blended(font, text, (SDL_Color){255, 255, 255, 255});
+    if (surface == NULL)
+        return;
+
+    texture = SDL_CreateTextureFromSurface(renderer, surface);
+    dst = (SDL_Rect){x, y, surface->w, surface->h};
+    SDL_FreeSurface(surface);
+
+    if (texture != NULL)
+    {
+        SDL_RenderCopy(renderer, texture, NULL, &dst);
+        SDL_DestroyTexture(texture);
+    }
+}
+
+static void run_main_game(SDL_Renderer *renderer, TTF_Font *font)
+{
+    CharacterSelection selection = {0, 0, 0, 0};
+    const CharacterDefinition *characters;
+    SDL_Texture *background;
+    SDL_Event event;
+    Joueur player;
+    Bullet bullets[MAX_BULLETS];
+    int characterCount = 0;
+    int running = 1;
+
+    characters = getCharacterDefinitions(&characterCount);
+    if (!runCharacterSelectMenu(renderer, font, &selection))
+        return;
+
+    if (characterCount <= 0 ||
+        selection.p1CharacterIndex < 0 ||
+        selection.p1CharacterIndex >= characterCount)
+        return;
+
+    if (!initialiserJoueurAvecAssets(&player, renderer, 80, GROUND_Y,
+            &characters[selection.p1CharacterIndex].outfits[selection.p1OutfitIndex]))
+        return;
+
+    initBullets(bullets, MAX_BULLETS);
+    background = load_texture(renderer, "assets/mars_ship_level_full.png");
+    stellarMusicStartGameplay();
+
+    while (running)
+    {
+        const Uint8 *keys;
+        Uint32 now;
+
+        serial_input_poll();
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+                running = 0;
+
+            if (event.type == SDL_KEYDOWN &&
+                event.key.keysym.sym == SDLK_SPACE)
+                tirerBullet(bullets, MAX_BULLETS, &player, 1, SDL_GetTicks());
+        }
+
+        keys = SDL_GetKeyboardState(NULL);
+        now = SDL_GetTicks();
+
+        gererEntreeJoueurClavier(&player, keys,
+                                  SDL_SCANCODE_LEFT,
+                                  SDL_SCANCODE_RIGHT,
+                                  SDL_SCANCODE_UP);
+        updateJoueur(&player, now);
+        updateBullets(bullets, MAX_BULLETS);
+        stellarMusicUpdateGameplay();
+
+        SDL_SetRenderDrawColor(renderer, 8, 10, 22, 255);
+        SDL_RenderClear(renderer);
+        if (background != NULL)
+            SDL_RenderCopy(renderer, background, NULL, NULL);
+
+        SDL_SetRenderDrawColor(renderer, 80, 210, 255, 255);
+        SDL_RenderDrawLine(renderer, 0, GROUND_Y + PLAYER_H, SCREEN_W, GROUND_Y + PLAYER_H);
+        renderJoueur(renderer, &player);
+        renderBullets(renderer, bullets, MAX_BULLETS);
+        render_text(renderer, font, "Joystick: move/jump   Button1: shoot   Button2: restart puzzle disabled", 24, 24);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+    }
+
+    if (background != NULL)
+        SDL_DestroyTexture(background);
+    libererJoueur(&player);
+}
+
+int main(void)
+{
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+    TTF_Font *font;
+    char savePath[SAVE_PATH_MAX];
+
     serial_input_open(ARDUINO_SERIAL_DEV);
 
-    GameContext ctx;
-    Uint32 result_started = 0;
-
-    
-    if (!game_init(&ctx)) {
-        fprintf(stderr, "game_init failed – aborting.\n");
-        game_destroy(&ctx);
+    if (!initSDL(&window, &renderer))
+    {
+        serial_input_close();
         return 1;
     }
 
-    if (run_main_menu(ctx.renderer) != MAIN_MENU_START) {
-        game_destroy(&ctx);
-        serial_input_close();
-        return 0;
-    }
+    font = TTF_OpenFont("assets_pluto/font.ttf", 18);
+    if (font == NULL)
+        font = TTF_OpenFont("puzzle_game/assets/fonts/SpaceMono-Regular.ttf", 18);
 
-    
-    int running = 1;
-    SDL_Event event;
+    while (run_main_menu(renderer) != MAIN_MENU_START)
+        SDL_Delay(16);
 
-    while (running) {
-        /* Inject Arduino button presses as SDL keyboard events */
-        serial_input_poll();
+    savePath[0] = '\0';
+    prompt_select_save(renderer, font, savePath, sizeof(savePath));
+    run_main_game(renderer, font);
 
-        game_render(&ctx);
-
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = 0;
-                break;
-            }
-            game_handle_event(&ctx, &event);
-        }
-
-        game_update(&ctx);
-
-        if (ctx.state != STATE_PLAYING) {
-            if (result_started == 0)
-                result_started = SDL_GetTicks();
-
-            if (SDL_GetTicks() - result_started >= 1200) {
-                game_restart(&ctx);
-                result_started = 0;
-            }
-        }
-    }
-
-    
-    game_destroy(&ctx);
+    if (font != NULL)
+        TTF_CloseFont(font);
+    shutdownSDL(window, renderer);
     serial_input_close();
     return 0;
 }

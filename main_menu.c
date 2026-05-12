@@ -3,6 +3,13 @@
 
 #include <string.h>
 
+#ifndef SCREEN_W
+#define SCREEN_W 1280
+#endif
+#ifndef SCREEN_H
+#define SCREEN_H 720
+#endif
+
 #define MAIN_MENU_W      480
 #define MAIN_MENU_HEIGHT 320
 #define MAIN_MENU_BUTTONS 5
