@@ -433,8 +433,6 @@ int run_main_menu(SDL_Renderer *renderer)
                         result = MAIN_MENU_START;
                         running = 0;
                     }
-                    if (selected == 4)
-                        running = 0;
                 }
             }
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
@@ -452,7 +450,7 @@ int run_main_menu(SDL_Renderer *renderer)
                             running = 0;
                         }
                         if (i == 4)
-                            running = 0;
+                            selected = 0;
                     }
                     menu.buttons[i].down = 0;
                 }

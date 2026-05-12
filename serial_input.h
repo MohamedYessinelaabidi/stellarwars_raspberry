@@ -13,7 +13,8 @@
  *   'D' / 'd'  →  SDLK_RIGHT (move right)
  *   'C' / 'c'  →  SDLK_SPACE (shoot / confirm)
  *   ' '        →  SDLK_SPACE (legacy confirm)
- *   'Q' / 'q'  →  SDLK_ESCAPE (pause / back)
+ *   'R' / 'r'  →  SDLK_r     (restart puzzle)
+ *   'Q' / 'q'  →  SDLK_ESCAPE (legacy keyboard-only back)
  *   'P' / 'p'  →  SDLK_a     (previous puzzle piece)
  *   'N' / 'n'  →  SDLK_d     (next puzzle piece)
  *

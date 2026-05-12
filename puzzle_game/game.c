@@ -380,7 +380,12 @@ static void clamp_piece_to_screen(Piece *piece)
 
 static void choose_next_piece(GameContext *ctx, int direction)
 {
+    Piece *current = &ctx->pieces[ctx->selected_index];
     int idx = ctx->selected_index;
+
+    if (!current->placed)
+        current->drag_rect = current->tray_rect;
+    ctx->dragging = -1;
 
     for (int i = 0; i < 3; i++) {
         idx = (idx + direction + 3) % 3;

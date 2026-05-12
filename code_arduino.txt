@@ -73,7 +73,7 @@ void loop() {
   sendKey(wantDown, downHeld, 'S', 's');
 
   sendButton(digitalRead(button1), lastB1, 'C', 'c');  // confirm / place
-  sendButton(digitalRead(button2), lastB2, 'Q', 'q');  // back / quit
+  sendButton(digitalRead(button2), lastB2, 'R', 'r');  // restart puzzle
   sendButton(digitalRead(button3), lastB3, 'P', 'p');  // previous puzzle piece
   sendButton(digitalRead(button4), lastB4, 'N', 'n');  // next puzzle piece
   sendButton(digitalRead(joySW), lastJOY, 'C', 'c');   // confirm / place
