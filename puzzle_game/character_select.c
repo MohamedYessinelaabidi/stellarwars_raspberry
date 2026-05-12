@@ -158,16 +158,16 @@ static int pointInRect(int x, int y, SDL_Rect rect)
 
 static void drawCard(SDL_Renderer *renderer, TTF_Font *font, UiAssets *ui, SDL_Texture *portrait, SDL_Rect rect, const char *playerLabel, const char *name, const char *outfit, const char *menuControls, const char *gameControls)
 {
-    SDL_Rect portraitDst = {rect.x + (rect.w - 160) / 2, rect.y + 86, 160, 160};
+    int portraitSize = rect.h / 3;
+    SDL_Rect portraitDst = {rect.x + (rect.w - portraitSize) / 2, rect.y + 58, portraitSize, portraitSize};
     drawImagePanel(renderer, ui->cardPanel, rect, (SDL_Color){18, 22, 34, 238}, (SDL_Color){255, 230, 90, 255}, 1);
-    drawCenteredText(renderer, font, playerLabel, (SDL_Rect){rect.x, rect.y + 14, rect.w, 30}, (SDL_Color){255, 235, 110, 255});
-    drawCenteredText(renderer, font, name, (SDL_Rect){rect.x, rect.y + 48, rect.w, 30}, (SDL_Color){240, 245, 245, 255});
+    drawCenteredText(renderer, font, playerLabel, (SDL_Rect){rect.x, rect.y + 8, rect.w, 22}, (SDL_Color){255, 235, 110, 255});
+    drawCenteredText(renderer, font, name, (SDL_Rect){rect.x, rect.y + 31, rect.w, 22}, (SDL_Color){240, 245, 245, 255});
     if (portrait) SDL_RenderCopy(renderer, portrait, NULL, &portraitDst);
-    drawCenteredText(renderer, font, outfit, (SDL_Rect){rect.x + 10, rect.y + 256, rect.w - 20, 32}, (SDL_Color){220, 232, 240, 255});
-    drawImagePanel(renderer, ui->inputPanel, (SDL_Rect){rect.x + 22, rect.y + 304, rect.w - 44, 74}, (SDL_Color){12, 16, 26, 235}, (SDL_Color){80, 145, 170, 255}, 0);
-    drawCenteredText(renderer, font, "Input", (SDL_Rect){rect.x + 22, rect.y + 309, rect.w - 44, 20}, (SDL_Color){255, 235, 110, 255});
-    drawCenteredText(renderer, font, menuControls, (SDL_Rect){rect.x + 22, rect.y + 334, rect.w - 44, 20}, (SDL_Color){220, 232, 240, 255});
-    drawCenteredText(renderer, font, gameControls, (SDL_Rect){rect.x + 22, rect.y + 356, rect.w - 44, 20}, (SDL_Color){180, 214, 226, 255});
+    drawCenteredText(renderer, font, outfit, (SDL_Rect){rect.x + 6, rect.y + 126, rect.w - 12, 20}, (SDL_Color){220, 232, 240, 255});
+    drawImagePanel(renderer, ui->inputPanel, (SDL_Rect){rect.x + 8, rect.y + 150, rect.w - 16, 45}, (SDL_Color){12, 16, 26, 235}, (SDL_Color){80, 145, 170, 255}, 0);
+    drawCenteredText(renderer, font, menuControls, (SDL_Rect){rect.x + 8, rect.y + 153, rect.w - 16, 18}, (SDL_Color){220, 232, 240, 255});
+    drawCenteredText(renderer, font, gameControls, (SDL_Rect){rect.x + 8, rect.y + 174, rect.w - 16, 18}, (SDL_Color){180, 214, 226, 255});
 }
 
 int runCharacterSelectMenu(SDL_Renderer *renderer, TTF_Font *font, CharacterSelection *selection)
@@ -183,13 +183,13 @@ int runCharacterSelectMenu(SDL_Renderer *renderer, TTF_Font *font, CharacterSele
     SDL_Texture *bg = loadTexture(renderer, "assets/ui/character_select_bg.png");
     SDL_Texture *portraits[2][2] = {{NULL, NULL}, {NULL, NULL}};
     UiAssets ui;
-    SDL_Rect p1Card = {140, 138, 390, 410};
-    SDL_Rect p2Card = {750, 138, 390, 410};
-    SDL_Rect p1OutfitArea = {140, 386, 390, 162};
-    SDL_Rect p2OutfitArea = {750, 386, 390, 162};
-    SDL_Rect backButton = {310, 638, 170, 44};
-    SDL_Rect validateButton = {555, 638, 170, 44};
-    SDL_Rect startButton = {800, 638, 170, 44};
+    SDL_Rect p1Card = {24, 58, 190, 205};
+    SDL_Rect p2Card = {266, 58, 190, 205};
+    SDL_Rect p1OutfitArea = {24, 180, 190, 83};
+    SDL_Rect p2OutfitArea = {266, 180, 190, 83};
+    SDL_Rect backButton = {36, 276, 112, 32};
+    SDL_Rect validateButton = {184, 276, 112, 32};
+    SDL_Rect startButton = {332, 276, 112, 32};
     SDL_Event e;
 
     loadUiAssets(renderer, &ui);
@@ -205,17 +205,14 @@ int runCharacterSelectMenu(SDL_Renderer *renderer, TTF_Font *font, CharacterSele
         SDL_RenderClear(renderer);
         if (bg) SDL_RenderCopy(renderer, bg, NULL, NULL);
 
-        drawCenteredText(renderer, font, "Choix du personnage", (SDL_Rect){0, 34, SCREEN_W, 40}, (SDL_Color){255, 236, 120, 255});
-        drawCenteredText(renderer, font, "Chaque joueur modifie uniquement sa propre fenetre de selection.", (SDL_Rect){0, 82, SCREEN_W, 28}, (SDL_Color){204, 222, 232, 255});
+        drawCenteredText(renderer, font, "Choix du personnage", (SDL_Rect){0, 12, SCREEN_W, 28}, (SDL_Color){255, 236, 120, 255});
+        drawCenteredText(renderer, font, "Entree/Espace: lancer", (SDL_Rect){0, 38, SCREEN_W, 18}, (SDL_Color){204, 222, 232, 255});
 
         drawCard(renderer, font, &ui, portraits[p1Char][p1Outfit], p1Card, "Joueur 1", defs[p1Char].name, defs[p1Char].outfits[p1Outfit].outfitName, "A/D personnage, W/S tenue", "Clic haut: perso, bas: tenue");
         drawCard(renderer, font, &ui, portraits[p2Char][p2Outfit], p2Card, "Joueur 2", defs[p2Char].name, defs[p2Char].outfits[p2Outfit].outfitName, "Fleches personnage/tenue", "Clic haut: perso, bas: tenue");
 
-        drawImagePanel(renderer, ui.vsPanel, (SDL_Rect){548, 238, 184, 134}, (SDL_Color){14, 18, 28, 238}, (SDL_Color){90, 180, 205, 255}, 0);
-        drawCenteredText(renderer, font, "VS", (SDL_Rect){548, 278, 184, 48}, (SDL_Color){255, 235, 110, 255});
-
-        drawImagePanel(renderer, ui.infoBar, (SDL_Rect){120, 570, 1040, 54}, (SDL_Color){16, 20, 31, 235}, (SDL_Color){86, 140, 160, 255}, 0);
-        drawCenteredText(renderer, font, "Entree / Espace ou clic Commencer : lancer    |    Echap ou Retour : quitter", (SDL_Rect){120, 583, 1040, 28}, (SDL_Color){220, 232, 240, 255});
+        drawImagePanel(renderer, ui.vsPanel, (SDL_Rect){220, 116, 40, 50}, (SDL_Color){14, 18, 28, 238}, (SDL_Color){90, 180, 205, 255}, 0);
+        drawCenteredText(renderer, font, "VS", (SDL_Rect){220, 128, 40, 26}, (SDL_Color){255, 235, 110, 255});
 
         drawButton(renderer, font, &ui, "Retour", backButton, 0);
         drawButton(renderer, font, &ui, "Valider", validateButton, 1);

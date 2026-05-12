@@ -4,6 +4,7 @@ TARGET  = prog
 CFLAGS  = -O2 -Wall -Wextra -Wpedantic -std=c11 \
           $(shell sdl2-config --cflags) \
           -D_DEFAULT_SOURCE \
+          -DSTELLA_RPI_DISPLAY \
           -DPUZZLE_ASSET_PREFIX=\"puzzle_game/\"
 LIBS    = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lm
 

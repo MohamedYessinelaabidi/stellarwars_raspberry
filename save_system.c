@@ -327,12 +327,15 @@ static void render_prompt(SDL_Renderer *renderer, TTF_Font *font,
     destroy_save_menu_visuals(&visuals);
 }
 
-static void draw_text(SDL_Renderer *renderer, TTF_Font *font,
-                      const char *text, int x, int y, SDL_Color color)
+static void draw_text_fit(SDL_Renderer *renderer, TTF_Font *font,
+                          const char *text, int x, int y,
+                          int maxW, int maxH, SDL_Color color)
 {
     SDL_Surface *surface;
     SDL_Texture *texture;
     SDL_Rect dst;
+    int scaledW;
+    int scaledH;
 
     if (font == NULL)
         return;
@@ -346,6 +349,19 @@ static void draw_text(SDL_Renderer *renderer, TTF_Font *font,
     dst.y = y;
     dst.w = surface->w;
     dst.h = surface->h;
+    if (dst.w > 0 && dst.h > 0 &&
+        maxW > 0 && maxH > 0 && (dst.w > maxW || dst.h > maxH))
+    {
+        scaledW = maxW;
+        scaledH = (dst.h * scaledW) / dst.w;
+        if (scaledH > maxH)
+        {
+            scaledH = maxH;
+            scaledW = (dst.w * scaledH) / dst.h;
+        }
+        dst.w = scaledW;
+        dst.h = scaledH;
+    }
     SDL_FreeSurface(surface);
 
     if (texture != NULL)
@@ -362,8 +378,8 @@ static int wait_for_choice(SDL_Renderer *renderer, TTF_Font *font,
 {
     SaveMenuVisuals visuals;
     SDL_Event event;
-    SDL_Rect yesRect = {SCREEN_W / 2 - 125, SCREEN_H / 2 + 22, 105, 52};
-    SDL_Rect noRect  = {SCREEN_W / 2 +  22, SCREEN_H / 2 + 22, 108, 54};
+    SDL_Rect yesRect = {SCREEN_W / 2 - 112, SCREEN_H / 2 + 28, 92, 42};
+    SDL_Rect noRect  = {SCREEN_W / 2 +  20, SCREEN_H / 2 + 28, 92, 42};
     int yesHovered = 0;
     int noHovered = 0;
     int mouseX;
@@ -386,10 +402,10 @@ static int wait_for_choice(SDL_Renderer *renderer, TTF_Font *font,
             Mix_PlayChannel(-1, visuals.hover, 0);
 
         render_save_background(renderer, &visuals);
-        draw_text(renderer, font, title, SCREEN_W / 2 - 95, SCREEN_H / 2 - 55,
-                  (SDL_Color){255, 220, 80, 255});
-        draw_text(renderer, font, detail, SCREEN_W / 2 - 160, SCREEN_H / 2 - 28,
-                  (SDL_Color){255, 255, 255, 255});
+        draw_text_fit(renderer, font, title, 35, SCREEN_H / 2 - 54, SCREEN_W - 70, 26,
+                      (SDL_Color){255, 220, 80, 255});
+        draw_text_fit(renderer, font, detail, 35, SCREEN_H / 2 - 24, SCREEN_W - 70, 24,
+                      (SDL_Color){255, 255, 255, 255});
         render_image_button(renderer, visuals.yes, yesRect, yesHovered);
         render_image_button(renderer, visuals.no, noRect, noHovered);
         SDL_RenderPresent(renderer);
@@ -483,33 +499,33 @@ static void render_save_name_prompt(SDL_Renderer *renderer, TTF_Font *font,
     load_save_menu_visuals(renderer, &visuals);
     render_save_background(renderer, &visuals);
 
-    panel.x = SCREEN_W / 2 - 210;
-    panel.y = SCREEN_H / 2 - 85;
-    panel.w = 420;
-    panel.h = 170;
+    panel.x = 22;
+    panel.y = SCREEN_H / 2 - 80;
+    panel.w = SCREEN_W - 44;
+    panel.h = 160;
     SDL_SetRenderDrawColor(renderer, 20, 24, 38, 255);
     SDL_RenderFillRect(renderer, &panel);
     SDL_SetRenderDrawColor(renderer, 210, 210, 230, 255);
     SDL_RenderDrawRect(renderer, &panel);
 
-    draw_text(renderer, font, "Name your save file", panel.x + 18, panel.y + 18, yellow);
-    draw_text(renderer, font, "Type a name, press Enter.", panel.x + 18, panel.y + 45, muted);
+    draw_text_fit(renderer, font, "Name your save file", panel.x + 14, panel.y + 14, panel.w - 28, 24, yellow);
+    draw_text_fit(renderer, font, "Type a name, press Enter.", panel.x + 14, panel.y + 40, panel.w - 28, 20, muted);
 
-    inputBox.x = panel.x + 18;
-    inputBox.y = panel.y + 72;
-    inputBox.w = panel.w - 36;
-    inputBox.h = 30;
+    inputBox.x = panel.x + 14;
+    inputBox.y = panel.y + 66;
+    inputBox.w = panel.w - 28;
+    inputBox.h = 28;
     SDL_SetRenderDrawColor(renderer, 8, 12, 24, 255);
     SDL_RenderFillRect(renderer, &inputBox);
     SDL_SetRenderDrawColor(renderer, 220, 220, 235, 255);
     SDL_RenderDrawRect(renderer, &inputBox);
 
     snprintf(line, sizeof(line), "%s_", name);
-    draw_text(renderer, font, line, inputBox.x + 18, inputBox.y + 13, white);
+    draw_text_fit(renderer, font, line, inputBox.x + 10, inputBox.y + 5, inputBox.w - 20, inputBox.h - 8, white);
 
-    draw_text(renderer, font, "Backspace edits. Esc cancels.", panel.x + 18, panel.y + 115, muted);
+    draw_text_fit(renderer, font, "Backspace edits. Esc cancels.", panel.x + 14, panel.y + 108, panel.w - 28, 20, muted);
     if (error != NULL && error[0] != '\0')
-        draw_text(renderer, font, error, panel.x + 18, panel.y + 138, red);
+        draw_text_fit(renderer, font, error, panel.x + 14, panel.y + 132, panel.w - 28, 18, red);
 
     SDL_RenderPresent(renderer);
     destroy_save_menu_visuals(&visuals);
@@ -727,41 +743,41 @@ static void render_save_list(SDL_Renderer *renderer, TTF_Font *font,
     load_save_menu_visuals(renderer, &visuals);
     render_save_background(renderer, &visuals);
 
-    loadRect.x = SCREEN_W / 2 - 138;
-    loadRect.y = 28;
-    loadRect.w = 276;
-    loadRect.h = 46;
+    loadRect.x = SCREEN_W / 2 - 90;
+    loadRect.y = 16;
+    loadRect.w = 180;
+    loadRect.h = 34;
     render_image_button(renderer, visuals.load, loadRect, 0);
 
-    panel.x = SCREEN_W / 2 - 215;
-    panel.y = 78;
-    panel.w = 430;
-    panel.h = SCREEN_H - 145;
+    panel.x = 20;
+    panel.y = 58;
+    panel.w = SCREEN_W - 40;
+    panel.h = SCREEN_H - 112;
     SDL_SetRenderDrawColor(renderer, 20, 24, 38, 255);
     SDL_RenderFillRect(renderer, &panel);
     SDL_SetRenderDrawColor(renderer, 210, 210, 230, 255);
     SDL_RenderDrawRect(renderer, &panel);
 
-    draw_text(renderer, font, "Saved games", panel.x + 18, panel.y + 12, yellow);
+    draw_text_fit(renderer, font, "Saved games", panel.x + 14, panel.y + 8, panel.w - 28, 22, yellow);
 
     if (count == 0)
-        draw_text(renderer, font, "No saves found. Press N for new game.", panel.x + 18, panel.y + 46, white);
+        draw_text_fit(renderer, font, "No saves found. Press N for new game.", panel.x + 14, panel.y + 42, panel.w - 28, 20, white);
     else
     {
-        draw_text(renderer, font, "Press 1-9 or click, N for new game.", panel.x + 18, panel.y + 38, muted);
+        draw_text_fit(renderer, font, "Press 1-9/click, N for new game.", panel.x + 14, panel.y + 34, panel.w - 28, 18, muted);
         for (i = 0; i < count; i++)
         {
-            rowRect.x = panel.x + 22;
-            rowRect.y = panel.y + 59 + i * 22;
-            rowRect.w = panel.w - 44;
-            rowRect.h = 18;
+            rowRect.x = panel.x + 14;
+            rowRect.y = panel.y + 57 + i * 16;
+            rowRect.w = panel.w - 28;
+            rowRect.h = 14;
             if (i == hoverIndex)
             {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 42);
                 SDL_RenderFillRect(renderer, &rowRect);
             }
             snprintf(line, sizeof(line), "%d. %s", i + 1, entries[i].name);
-            draw_text(renderer, font, line, panel.x + 28, panel.y + 62 + i * 22, white);
+            draw_text_fit(renderer, font, line, rowRect.x + 4, rowRect.y - 2, rowRect.w - 8, 16, white);
         }
     }
 
@@ -775,7 +791,7 @@ int prompt_select_save(SDL_Renderer *renderer, TTF_Font *font, char *path, int p
     SaveEntry entries[MAX_SAVE_FILES];
     SaveMenuVisuals visuals;
     SDL_Event event;
-    SDL_Rect newRect = {SCREEN_W / 2 - 138, SCREEN_H - 65, 276, 46};
+    SDL_Rect newRect = {SCREEN_W / 2 - 90, SCREEN_H - 46, 180, 34};
     SDL_Rect rowRect;
     int count;
     int index;
@@ -803,10 +819,10 @@ int prompt_select_save(SDL_Renderer *renderer, TTF_Font *font, char *path, int p
         newHovered = point_in_rect(mouseX, mouseY, newRect);
         for (i = 0; i < count; i++)
         {
-            rowRect.x = SCREEN_W / 2 - 193;
-            rowRect.y = 137 + i * 22;
-            rowRect.w = 386;
-            rowRect.h = 18;
+            rowRect.x = 34;
+            rowRect.y = 115 + i * 16;
+            rowRect.w = SCREEN_W - 68;
+            rowRect.h = 14;
             if (point_in_rect(mouseX, mouseY, rowRect))
                 hoverIndex = i;
         }

@@ -24,6 +24,7 @@ static void render_text(SDL_Renderer *renderer, TTF_Font *font,
     SDL_Surface *surface;
     SDL_Texture *texture;
     SDL_Rect dst;
+    int maxW;
 
     if (font == NULL)
         return;
@@ -34,6 +35,12 @@ static void render_text(SDL_Renderer *renderer, TTF_Font *font,
 
     texture = SDL_CreateTextureFromSurface(renderer, surface);
     dst = (SDL_Rect){x, y, surface->w, surface->h};
+    maxW = SCREEN_W - x * 2;
+    if (dst.w > maxW && dst.w > 0)
+    {
+        dst.h = (dst.h * maxW) / dst.w;
+        dst.w = maxW;
+    }
     SDL_FreeSurface(surface);
 
     if (texture != NULL)
@@ -63,7 +70,7 @@ static void run_main_game(SDL_Renderer *renderer, TTF_Font *font)
         selection.p1CharacterIndex >= characterCount)
         return;
 
-    if (!initialiserJoueurAvecAssets(&player, renderer, 80, GROUND_Y,
+    if (!initialiserJoueurAvecAssets(&player, renderer, 42, GROUND_Y,
             &characters[selection.p1CharacterIndex].outfits[selection.p1OutfitIndex]))
         return;
 
@@ -107,7 +114,7 @@ static void run_main_game(SDL_Renderer *renderer, TTF_Font *font)
         SDL_RenderDrawLine(renderer, 0, GROUND_Y + PLAYER_H, SCREEN_W, GROUND_Y + PLAYER_H);
         renderJoueur(renderer, &player);
         renderBullets(renderer, bullets, MAX_BULLETS);
-        render_text(renderer, font, "Joystick: move/jump   Button1: shoot   Button2: restart puzzle disabled", 24, 24);
+        render_text(renderer, font, "Joystick: move/jump   Button1: shoot", 8, 8);
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
     }

@@ -11,12 +11,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef STELLA_RPI_DISPLAY
+#define SCREEN_W 480
+#define SCREEN_H 320
+#else
 #define SCREEN_W 1280
 #define SCREEN_H 720
+#endif
 #define WORLD_W 5120
 #define WORLD_H 850
+#ifdef STELLA_RPI_DISPLAY
+#define GROUND_Y 220
+#define MARS_GROUND_Y 205
+#else
 #define GROUND_Y 500
 #define MARS_GROUND_Y 470
+#endif
 #define MAX_NPCS 15
 #define STABLE_PLATFORM_COUNT 3
 #define MOVING_PLATFORM_COUNT 2
@@ -24,9 +34,15 @@
 #define SHIP_GROUND_SURFACE_OFFSET 5
 #define MARS_GROUND_SURFACE_OFFSET 49
 
+#ifdef STELLA_RPI_DISPLAY
+#define PLAYER_W 64
+#define PLAYER_H 64
+#define PLAYER_SPEED 3
+#else
 #define PLAYER_W 120
 #define PLAYER_H 120
 #define PLAYER_SPEED 4
+#endif
 #define PLAYER_LIVES 3
 #define PLAYER_HEALTH_MAX 3
 #define PLAYER_DAMAGE_COOLDOWN 900
@@ -65,9 +81,15 @@
 #define FACE_LEFT 1
 
 #define MAX_BULLETS 50
+#ifdef STELLA_RPI_DISPLAY
+#define BULLET_W 14
+#define BULLET_H 5
+#define BULLET_SPEED 8
+#else
 #define BULLET_W 24
 #define BULLET_H 8
 #define BULLET_SPEED 14
+#endif
 #define FIRE_COOLDOWN 250
 
 #define ENEMY_HEALTH_MAX 3
@@ -89,8 +111,13 @@
 #define GEM_SCORE_VALUE 50
 #define GEM_DAMAGE_BONUS 2
 #define GEM_BUFF_DURATION 600
+#ifdef STELLA_RPI_DISPLAY
+#define GEM_W 34
+#define GEM_H 44
+#else
 #define GEM_W 64
 #define GEM_H 82
+#endif
 #define NPC_VISUAL_GROUND_OFFSET 6
 #define PUZZLE_CHALLENGE_ROUNDS 5
 #define PUZZLE_CHALLENGE_REQUIRED 3
