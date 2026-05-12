@@ -1,0 +1,5 @@
+var searchData=
+[
+  ['handle_5fhighscore_5fevent_0',['handle_highscore_event',['../highscore_8c.html#ad172cb06898ea36a9f769301b8e7acd3',1,'handle_highscore_event(Highscore *h, SDL_Event event, int *running):&#160;highscore.c'],['../highscore_8h.html#ad172cb06898ea36a9f769301b8e7acd3',1,'handle_highscore_event(Highscore *h, SDL_Event event, int *running):&#160;highscore.c']]],
+  ['handlemenuevents_1',['handlemenuevents',['../menu_8c.html#a2ee80eff0d9ae0d186d76d79f5a87e27',1,'handleMenuEvents(SDL_Event *event, MenuButtons *buttons, int *currentPage, Mix_Chunk *hoverSound):&#160;menu.c'],['../menu_8h.html#a2ee80eff0d9ae0d186d76d79f5a87e27',1,'handleMenuEvents(SDL_Event *event, MenuButtons *buttons, int *currentPage, Mix_Chunk *hoverSound):&#160;menu.c'],['../save__load_2menu_8c.html#a2ee80eff0d9ae0d186d76d79f5a87e27',1,'handleMenuEvents(SDL_Event *event, MenuButtons *buttons, int *currentPage, Mix_Chunk *hoverSound):&#160;menu.c'],['../save__load_2menu_8h.html#a2ee80eff0d9ae0d186d76d79f5a87e27',1,'handleMenuEvents(SDL_Event *event, MenuButtons *buttons, int *currentPage, Mix_Chunk *hoverSound):&#160;menu.c']]]
+];
