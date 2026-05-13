@@ -18,11 +18,10 @@
  *   'P' / 'p'  →  SDLK_a     (previous puzzle piece)
  *   'N' / 'n'  →  SDLK_d     (next puzzle piece)
  *
- * The Arduino should send the char while the button is held, then send
- * a release sentinel (uppercase = pressed, lowercase = released), OR
- * simply hold the char at ~60 Hz. Both protocols work because
- * serial_input_poll() issues a matching KEYUP 80 ms after the last
- * KEYDOWN for each key.
+ * The Arduino sends uppercase once when pressed and lowercase once when
+ * released. serial_input_poll() mirrors that as SDL_KEYDOWN / SDL_KEYUP
+ * and also keeps a virtual held-key state for gameplay code that reads
+ * SDL_GetKeyboardState().
  */
 
 #include <SDL2/SDL.h>
@@ -38,5 +37,9 @@ void serial_input_close(void);
  * Reads all pending bytes from the serial port and pushes synthetic
  * SDL keyboard events into the SDL event queue. */
 void serial_input_poll(void);
+
+/* Returns SDL_GetKeyboardState() merged with the held keys received from
+ * the Arduino. Use this for movement code that checks held scancodes. */
+const Uint8 *serial_input_get_keyboard_state(int *numkeys);
 
 #endif /* SERIAL_INPUT_H */

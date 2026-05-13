@@ -13,10 +13,8 @@
 
 static int  s_fd = -1;   /* file descriptor, -1 = not open */
 
-/* Each tracked key: SDL scancode, SDL keycode, last-seen timestamp.
- * We auto-release a key 80 ms after the last byte that activated it. */
+/* Each tracked key maps one Arduino press/release byte pair to an SDL key. */
 #define SERIAL_KEY_COUNT 10
-#define SERIAL_KEY_RELEASE_MS 80u
 
 typedef struct {
     char      trigger_upper; /* uppercase char from Arduino → press   */
@@ -24,21 +22,23 @@ typedef struct {
     SDL_Keycode  keycode;
     SDL_Scancode scancode;
     int          pressed;    /* currently injected as held?            */
-    Uint32       last_seen;  /* SDL_GetTicks() of last press byte      */
 } SerialKey;
 
 static SerialKey s_keys[SERIAL_KEY_COUNT] = {
-    { 'W', 'w', SDLK_UP,     SDL_SCANCODE_UP,     0, 0 },
-    { 'S', 's', SDLK_DOWN,   SDL_SCANCODE_DOWN,   0, 0 },
-    { 'A', 'a', SDLK_LEFT,   SDL_SCANCODE_LEFT,   0, 0 },
-    { 'D', 'd', SDLK_RIGHT,  SDL_SCANCODE_RIGHT,  0, 0 },
-    { 'C', 'c', SDLK_SPACE,  SDL_SCANCODE_SPACE,  0, 0 },
-    { ' ', ' ', SDLK_SPACE,  SDL_SCANCODE_SPACE,  0, 0 },
-    { 'R', 'r', SDLK_r,      SDL_SCANCODE_R,      0, 0 },
-    { 'Q', 'q', SDLK_ESCAPE, SDL_SCANCODE_ESCAPE, 0, 0 },
-    { 'P', 'p', SDLK_a,      SDL_SCANCODE_A,      0, 0 },
-    { 'N', 'n', SDLK_d,      SDL_SCANCODE_D,      0, 0 },
+    { 'W', 'w', SDLK_UP,     SDL_SCANCODE_UP,     0 },
+    { 'S', 's', SDLK_DOWN,   SDL_SCANCODE_DOWN,   0 },
+    { 'A', 'a', SDLK_LEFT,   SDL_SCANCODE_LEFT,   0 },
+    { 'D', 'd', SDLK_RIGHT,  SDL_SCANCODE_RIGHT,  0 },
+    { 'C', 'c', SDLK_SPACE,  SDL_SCANCODE_SPACE,  0 },
+    { ' ', ' ', SDLK_SPACE,  SDL_SCANCODE_SPACE,  0 },
+    { 'R', 'r', SDLK_r,      SDL_SCANCODE_R,      0 },
+    { 'Q', 'q', SDLK_ESCAPE, SDL_SCANCODE_ESCAPE, 0 },
+    { 'P', 'p', SDLK_a,      SDL_SCANCODE_A,      0 },
+    { 'N', 'n', SDLK_d,      SDL_SCANCODE_D,      0 },
 };
+
+static Uint8 s_serial_state[SDL_NUM_SCANCODES];
+static Uint8 s_merged_state[SDL_NUM_SCANCODES];
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -54,9 +54,9 @@ static void push_key_event(SerialKey *k, Uint32 type)
     SDL_PushEvent(&ev);
 }
 
-static void key_press(SerialKey *k, Uint32 now)
+static void key_press(SerialKey *k)
 {
-    k->last_seen = now;
+    s_serial_state[k->scancode] = 1;
     if (!k->pressed) {
         k->pressed = 1;
         push_key_event(k, SDL_KEYDOWN);
@@ -65,10 +65,17 @@ static void key_press(SerialKey *k, Uint32 now)
 
 static void key_release(SerialKey *k)
 {
+    s_serial_state[k->scancode] = 0;
     if (k->pressed) {
         k->pressed = 0;
         push_key_event(k, SDL_KEYUP);
     }
+}
+
+static void key_tap(SerialKey *k)
+{
+    push_key_event(k, SDL_KEYDOWN);
+    push_key_event(k, SDL_KEYUP);
 }
 
 /* ── Public API ───────────────────────────────────────────────────────── */
@@ -119,6 +126,7 @@ void serial_input_close(void)
     /* Release any still-held keys cleanly */
     for (i = 0; i < SERIAL_KEY_COUNT; i++)
         key_release(&s_keys[i]);
+    memset(s_serial_state, 0, sizeof(s_serial_state));
 }
 
 void serial_input_poll(void)
@@ -126,7 +134,6 @@ void serial_input_poll(void)
     unsigned char buf[64];
     ssize_t n;
     int i, j;
-    Uint32 now = SDL_GetTicks();
 
     /* 1. Read all pending bytes */
     if (s_fd >= 0) {
@@ -136,10 +143,13 @@ void serial_input_poll(void)
                 char c = (char)buf[j];
                 for (i = 0; i < SERIAL_KEY_COUNT; i++) {
                     if (c == s_keys[i].trigger_upper) {
-                        key_press(&s_keys[i], now);
+                        if (s_keys[i].trigger_upper == s_keys[i].trigger_lower)
+                            key_tap(&s_keys[i]);
+                        else
+                            key_press(&s_keys[i]);
                         break;
                     }
-                    /* Explicit lowercase = release (optional Arduino protocol) */
+                    /* Explicit lowercase = release. */
                     if (c == s_keys[i].trigger_lower &&
                         s_keys[i].trigger_lower != s_keys[i].trigger_upper) {
                         key_release(&s_keys[i]);
@@ -149,12 +159,17 @@ void serial_input_poll(void)
             }
         }
     }
+}
 
-    /* 2. Auto-release keys not seen within the timeout window */
-    for (i = 0; i < SERIAL_KEY_COUNT; i++) {
-        if (s_keys[i].pressed &&
-            (now - s_keys[i].last_seen) >= SERIAL_KEY_RELEASE_MS) {
-            key_release(&s_keys[i]);
-        }
-    }
+const Uint8 *serial_input_get_keyboard_state(int *numkeys)
+{
+    const Uint8 *keyboard = SDL_GetKeyboardState(numkeys);
+    int i;
+
+    memcpy(s_merged_state, keyboard, sizeof(s_merged_state));
+    for (i = 0; i < SDL_NUM_SCANCODES; i++)
+        if (s_serial_state[i])
+            s_merged_state[i] = 1;
+
+    return s_merged_state;
 }

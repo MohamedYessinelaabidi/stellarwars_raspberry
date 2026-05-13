@@ -94,7 +94,7 @@ static void run_main_game(SDL_Renderer *renderer, TTF_Font *font)
                 tirerBullet(bullets, MAX_BULLETS, &player, 1, SDL_GetTicks());
         }
 
-        keys = SDL_GetKeyboardState(NULL);
+        keys = serial_input_get_keyboard_state(NULL);
         now = SDL_GetTicks();
 
         gererEntreeJoueurClavier(&player, keys,
